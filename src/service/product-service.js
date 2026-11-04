@@ -1,8 +1,33 @@
-import PRODUCTS from "../data/products.json"
+import SEED_PRODUCTS from "../data/products.json"
 
-export default function getProductsByCategory() {
+const STORAGE_KEY = "mock_products_db";
+
+export function getProducts() {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if(!data) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_PRODUCTS));
+        return SEED_PRODUCTS;
+    }
+    return JSON.parse(data);
+}
+
+export function saveProduct(product) {
+    const existingProducts = getProducts();
+    if(existingProducts.find(p => p.name === product.name)) throw new Error("Cannot have duplicate product name");
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...existingProducts, product]));
+    return product;
+} 
+
+export function deleteProduct(product) {
+    const existingProducts = getProducts();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...existingProducts.filter(p => p.name !== product.name)]));
+    return product;
+}
+
+
+export function organizeByCategory(products) {
     const productsByCategory = new Map();
-    for (const product of PRODUCTS) {
+    for (const product of products) {
         if(productsByCategory.has(product.category)) {
             productsByCategory.get(product.category).push(product);
         } else {
@@ -10,4 +35,5 @@ export default function getProductsByCategory() {
         }
     }
     return productsByCategory;
-}
+}   
+

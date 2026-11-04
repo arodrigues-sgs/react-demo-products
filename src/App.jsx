@@ -1,20 +1,40 @@
 import './App.css'
-import Counter from './Counter';
-import getProductsByCategory from './service/product-service';
+import ProductTable from './components/ProductTable';
+import SearchBar from './components/SearchBar';
+import NewProductForm from './components/NewProductForm'
+import * as productService from './service/product-service';
 import { useState } from 'react';
 
 function App() {
-  console.log(getProductsByCategory());
-  return <FilterableProductTable products={getProductsByCategory()}/>
+  return <FilterableProductTable/>
 }
 
-function FilterableProductTable({ products }) {
+function FilterableProductTable() {
+  const [products, setProducts] = useState(productService.getProducts());
   const [filterText, setFilterText] = useState("");
   const [inStockOnly, setInStockOnly] = useState(false);
 
-  const myCustomHandler = (someString) => {
-    console.log("This is the sring that was passed to me: ", someString);
-    setFilterText(someString);
+  function handleAddProduct(product) {
+    try {
+      // or could check for duplicates here before invoking saveProduct
+      const saved = productService.saveProduct(product); // attempt to update "DB"
+      setProducts( [...products, saved]); // update state
+    } catch(error) {
+      alert(`Could not add product: ${product.name}. ${error.message}`);
+    } 
+  }
+
+  function handleEditProduct(product) {
+    // TODO
+  }
+
+  function handleDeleteProduct(product) {
+    try {
+      const deleted = productService.deleteProduct(product);
+      setProducts([...products.filter(p => p.name !== deleted.name)]);
+    } catch(error) {
+      alert(`Could not delete product: ${product.name}`);
+    }
   }
 
   return (
@@ -22,85 +42,19 @@ function FilterableProductTable({ products }) {
       <SearchBar 
         filterText={filterText}
         inStockOnly={inStockOnly}
-        onChangeFilterText={myCustomHandler}
+        onChangeFilterText={setFilterText}
         onChangeInStockOnly={setInStockOnly}
         />
       <ProductTable 
-        products={products} 
+        productsByCategory={productService.organizeByCategory(products)} 
         filterText={filterText}
-        inStockOnly={inStockOnly} />
-        <Counter />
+        inStockOnly={inStockOnly}
+        onEditProduct={handleEditProduct}
+        onDeleteProduct={handleDeleteProduct} />
+      <NewProductForm 
+        categories={[...productService.organizeByCategory(products).keys()]}
+        onAddProduct={handleAddProduct}/>
     </div>
-  );
-}
-
-function SearchBar({ filterText, inStockOnly, onChangeFilterText, onChangeInStockOnly }) {
-  return (
-    <form>
-      <input 
-        type="text"
-        value={filterText} 
-        onChange={(e) => onChangeFilterText(e.target.value)}
-        placeholder='Search ...' />
-      <br />
-      <label>
-        <input 
-          type="checkbox" 
-          checked={inStockOnly}
-          onChange={(e) => onChangeInStockOnly(e.target.checked)} />
-          Only show products in stock
-      </label>
-    </form>
-  );
-}
-
-function ProductTable({ products, filterText, inStockOnly } ) {
-  const rows = [];
-  const isMatch = (product, searchText) => product.name.toLowerCase().indexOf(searchText.toLowerCase()) !== -1;
-
-  products.forEach((productsOfCategory, category) => {
-    const productRows = [...productsOfCategory]
-      .filter(p => (!inStockOnly || p.stocked) && isMatch(p, filterText))
-      .map(p => <ProductRow product={p}/>);
-
-    // only push a category row if there are product rows to show for that category
-    if (productRows.length > 0) rows.push( <CategoryRow category={category} /> );
-
-    // push the product rows for that category after the category row
-    rows.push(productRows);
-  })
-    
-  return (
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Price</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows}
-      </tbody>
-    </table>
-  );
-}
-
-function CategoryRow({ category }) {
-  return (
-    <tr>
-      <th colSpan="2">
-        {category}
-      </th>
-    </tr>
-  );
-}
-
-function ProductRow({ product }) {
-  return (
-    <tr className={!product.stocked ? "out-of-stock" : ""}>
-      <td>{product.name}</td>
-      <td>{product.price}</td>
-    </tr>
   );
 }
 
