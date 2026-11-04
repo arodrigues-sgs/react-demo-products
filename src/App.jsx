@@ -1,9 +1,9 @@
 import './App.css'
-import PRODUCTS from "./data/products.json"
 import { useState } from 'react';
+import Counter from './Counter';
+import getProductsByCategory from './service/products-service';
 
 function App() {
-  console.log(PRODUCTS);
   return <FilterableProductTable products={PRODUCTS}/>
 }
 
