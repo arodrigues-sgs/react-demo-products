@@ -1,10 +1,11 @@
 import './App.css'
-import PRODUCTS from "./data/products.json"
+import Counter from './Counter';
+import getProductsByCategory from './service/product-service';
 import { useState } from 'react';
 
 function App() {
-  console.log(PRODUCTS);
-  return <FilterableProductTable products={PRODUCTS}/>
+  console.log(getProductsByCategory());
+  return <FilterableProductTable products={getProductsByCategory()}/>
 }
 
 function FilterableProductTable({ products }) {
@@ -25,9 +26,10 @@ function FilterableProductTable({ products }) {
         onChangeInStockOnly={setInStockOnly}
         />
       <ProductTable 
-        products={PRODUCTS} 
+        products={products} 
         filterText={filterText}
         inStockOnly={inStockOnly} />
+        <Counter />
     </div>
   );
 }
@@ -54,32 +56,20 @@ function SearchBar({ filterText, inStockOnly, onChangeFilterText, onChangeInStoc
 
 function ProductTable({ products, filterText, inStockOnly } ) {
   const rows = [];
-  let lastCategory = null;
+  const isMatch = (product, searchText) => product.name.toLowerCase().indexOf(searchText.toLowerCase()) !== -1;
 
-  products.forEach(product => {
-    if(product.category !== lastCategory) {
-      rows.push(
-        <CategoryRow 
-          category={product.category} 
-          key={product.category} />
-      );
-    }
+  products.forEach((productsOfCategory, category) => {
+    const productRows = [...productsOfCategory]
+      .filter(p => (!inStockOnly || p.stocked) && isMatch(p, filterText))
+      .map(p => <ProductRow product={p}/>);
 
-    let skip = false;
-    // skip over products are not in stock if we want in stock only
-    if(inStockOnly && !product.stocked) skip = true;
-    // skip if no match to filterText anywhere in the product name
-    if(product.name.toLowerCase().indexOf(filterText.toLowerCase()) === -1) skip = true; 
+    // only push a category row if there are product rows to show for that category
+    if (productRows.length > 0) rows.push( <CategoryRow category={category} /> );
+
+    // push the product rows for that category after the category row
+    rows.push(productRows);
+  })
     
-    !skip && rows.push(
-      <ProductRow 
-        product={product} 
-        key={product.name} />
-    );
-
-    lastCategory = product.category;
-  });
-  
   return (
     <table>
       <thead>
