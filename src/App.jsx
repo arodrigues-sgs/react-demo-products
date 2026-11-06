@@ -1,31 +1,25 @@
 import './App.css'
 import { useState } from 'react';
-import Counter from './Counter';
 import getProductsByCategory from './service/products-service';
 
 function App() {
-  return <FilterableProductTable products={PRODUCTS}/>
+  return <FilterableProductTable productsByCategory={getProductsByCategory()}/>
 }
 
-function FilterableProductTable({ products }) {
+function FilterableProductTable({ productsByCategory }) {
   const [filterText, setFilterText] = useState("");
   const [inStockOnly, setInStockOnly] = useState(false);
-
-  const myCustomHandler = (someString) => {
-    console.log("This is the sring that was passed to me: ", someString);
-    setFilterText(someString);
-  }
 
   return (
     <div> 
       <SearchBar 
         filterText={filterText}
         inStockOnly={inStockOnly}
-        onChangeFilterText={myCustomHandler}
+        onChangeFilterText={setFilterText}
         onChangeInStockOnly={setInStockOnly}
         />
       <ProductTable 
-        products={PRODUCTS} 
+        productsByCategory={productsByCategory} 
         filterText={filterText}
         inStockOnly={inStockOnly} />
     </div>
@@ -52,32 +46,22 @@ function SearchBar({ filterText, inStockOnly, onChangeFilterText, onChangeInStoc
   );
 }
 
-function ProductTable({ products, filterText, inStockOnly } ) {
-  const rows = [];
-  let lastCategory = null;
+function ProductTable({ productsByCategory, filterText, inStockOnly } ) {
+  const rowsToDisplay = [];
 
-  products.forEach(product => {
-    if(product.category !== lastCategory) {
-      rows.push(
-        <CategoryRow 
-          category={product.category} 
-          key={product.category} />
-      );
-    }
+  const matchesFilterText = (product, text) => product.name.toLowerCase().indexOf(text.toLowerCase()) !== -1;
 
-    let skip = false;
-    // skip over products are not in stock if we want in stock only
-    if(inStockOnly && !product.stocked) skip = true;
-    // skip if no match to filterText anywhere in the product name
-    if(product.name.toLowerCase().indexOf(filterText.toLowerCase()) === -1) skip = true; 
+  productsByCategory.forEach((productsOfCategory, category) => {
+    // filter out only products that match our stateful filters (filterText, inStockOnly)
+    const productRowsToDisplay = productsOfCategory
+      .filter(p => matchesFilterText(p, filterText) && (!inStockOnly || p.stocked))
+      .map(p => <ProductRow product={p} key={p.name} />);
     
-    !skip && rows.push(
-      <ProductRow 
-        product={product} 
-        key={product.name} />
-    );
-
-    lastCategory = product.category;
+    // if there are not any product rows to display for this category, we will skip to the next
+    if(productRowsToDisplay.length === 0) return;
+    
+    rowsToDisplay.push(<CategoryRow category={category} key={category} />);
+    rowsToDisplay.push(...productRowsToDisplay);
   });
   
   return (
@@ -89,7 +73,7 @@ function ProductTable({ products, filterText, inStockOnly } ) {
         </tr>
       </thead>
       <tbody>
-        {rows}
+        {rowsToDisplay}
       </tbody>
     </table>
   );
