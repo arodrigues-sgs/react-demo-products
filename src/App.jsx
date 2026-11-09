@@ -10,15 +10,16 @@ function App() {
 }
 
 function FilterableProductTable() {
-  const [products, setProducts] = useState(productService.getProducts());
+  const [productsByCategory, setProductsByCategory] = useState(productService.getProductsByCategory());
   const [filterText, setFilterText] = useState("");
   const [inStockOnly, setInStockOnly] = useState(false);
 
   function handleAddProduct(product) {
     try {
-      // or could check for duplicates here before invoking saveProduct
-      const saved = productService.saveProduct(product); // attempt to update "DB"
-      setProducts( [...products, saved]); // update state
+      // attempt to update the DB
+      productService.saveProduct(product); 
+      // if successful, we update state to tell React to re-render
+      setProductsByCategory(productService.getProductsByCategory()); // we re-fetch since it's quick, but there are better ways to do this
     } catch(error) {
       alert(`Could not add product: ${product.name}. ${error.message}`);
     } 
@@ -30,8 +31,10 @@ function FilterableProductTable() {
 
   function handleDeleteProduct(product) {
     try {
-      const deleted = productService.deleteProduct(product);
-      setProducts([...products.filter(p => p.name !== deleted.name)]);
+      // attempt to delete the product from the DB
+      productService.deleteProduct(product);
+      // if successful, we update state to tell React to re-render
+      setProductsByCategory(productService.getProductsByCategory());
     } catch(error) {
       alert(`Could not delete product: ${product.name}`);
     }
@@ -46,13 +49,13 @@ function FilterableProductTable() {
         onChangeInStockOnly={setInStockOnly}
         />
       <ProductTable 
-        productsByCategory={productService.organizeByCategory(products)} 
+        productsByCategory={productsByCategory} 
         filterText={filterText}
         inStockOnly={inStockOnly}
         onEditProduct={handleEditProduct}
         onDeleteProduct={handleDeleteProduct} />
       <NewProductForm 
-        categories={[...productService.organizeByCategory(products).keys()]}
+        categories={[...productsByCategory.keys()]}
         onAddProduct={handleAddProduct}/>
     </div>
   );

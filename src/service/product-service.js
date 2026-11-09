@@ -2,13 +2,29 @@ import SEED_PRODUCTS from "../data/products.json"
 
 const STORAGE_KEY = "mock_products_db";
 
-export function getProducts() {
+function getProducts() {
     const data = localStorage.getItem(STORAGE_KEY);
     if(!data) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_PRODUCTS));
         return SEED_PRODUCTS;
     }
     return JSON.parse(data);
+}
+
+function organizeByCategory(products) {
+    const productsByCategory = new Map();
+    for (const product of products) {
+        if(productsByCategory.has(product.category)) {
+            productsByCategory.get(product.category).push(product);
+        } else {
+            productsByCategory.set(product.category, [product])
+        }
+    }
+    return productsByCategory;
+}   
+
+export function getProductsByCategory() {
+    return organizeByCategory(getProducts());
 }
 
 export function saveProduct(product) {
@@ -23,17 +39,3 @@ export function deleteProduct(product) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...existingProducts.filter(p => p.name !== product.name)]));
     return product;
 }
-
-
-export function organizeByCategory(products) {
-    const productsByCategory = new Map();
-    for (const product of products) {
-        if(productsByCategory.has(product.category)) {
-            productsByCategory.get(product.category).push(product);
-        } else {
-            productsByCategory.set(product.category, [product])
-        }
-    }
-    return productsByCategory;
-}   
-
